@@ -357,7 +357,7 @@ const QnAManagement = () => {
               {selectedQnA?.answer && selectedQnA.answer.trim() !== '' ? 'Edit Answer' : 'Add Answer'}
             </DialogTitle>
             <DialogDescription>
-              Provide a helpful answer to the customer's question.
+              Provide a helpful answer to the customer question.
             </DialogDescription>
           </DialogHeader>
           
