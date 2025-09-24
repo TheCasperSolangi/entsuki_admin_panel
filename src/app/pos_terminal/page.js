@@ -36,7 +36,7 @@ const POSTerminal = () => {
   const [config, setConfig] = useState({
     terminal_id: "DTPOS-112",
     appName: "Entsuki",
-    apiBaseUrl: "http://localhost:5000/api"
+    apiBaseUrl: "https://api.entsuki.com/api"
   });
 
   // Products and cart state

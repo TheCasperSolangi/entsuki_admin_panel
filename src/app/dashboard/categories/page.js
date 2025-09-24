@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Pencil } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -33,6 +33,8 @@ export default function CategoriesPage() {
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const token = Cookies.get('token'); // replace with your token cookie name
   const AUTH_TOKEN = token ? `Bearer ${token}` : null;
@@ -50,6 +52,31 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      if (selectedCategory) {
+        setForm(selectedCategory);
+        setIsEditing(true);
+      } else {
+        setForm({
+          category_code: generateCategoryCode(),
+          category_name: '',
+          description: '',
+          short_description: '',
+          image: '',
+          icon: '',
+          metaTitle: '',
+          metaDesc: '',
+          keywords: ''
+        });
+        setIsEditing(false);
+      }
+      setImageFile(null);
+      setIconFile(null);
+      setAlert(null);
+    }
+  }, [open, selectedCategory]);
 
   // Handle input change
   const handleChange = (e) => {
@@ -76,8 +103,8 @@ export default function CategoriesPage() {
     }
   };
 
-  // Handle Add Category
-  const handleAddCategory = async () => {
+  // Handle submit (add or edit)
+  const handleSubmit = async () => {
     if (!form.category_name.trim()) {
       setAlert({ type: 'error', message: 'Please enter a category name.' });
       return;
@@ -88,33 +115,46 @@ export default function CategoriesPage() {
       const uploadedImageUrl = await uploadFile(imageFile);
       const uploadedIconUrl = await uploadFile(iconFile);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/categories`,
-        { ...form, image: uploadedImageUrl, icon: uploadedIconUrl },
-        { headers: { Authorization: AUTH_TOKEN } }
-      );
+      const payload = {
+        ...form,
+        image: uploadedImageUrl || form.image,
+        icon: uploadedIconUrl || form.icon,
+      };
 
-      setAlert({ type: 'success', message: 'Category added successfully.' });
+      delete payload._id;
+      delete payload.createdAt;
+      delete payload.updatedAt;
+
+      if (isEditing) {
+        await axios.put(
+          `${process.env.NEXT_PUBLIC_API_URL}/categories/${form._id}`,
+          payload,
+          { headers: { Authorization: AUTH_TOKEN } }
+        );
+        setAlert({ type: 'success', message: 'Category updated successfully.' });
+      } else {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/categories`,
+          payload,
+          { headers: { Authorization: AUTH_TOKEN } }
+        );
+        setAlert({ type: 'success', message: 'Category added successfully.' });
+      }
+
       setOpen(false);
-      setForm({
-        category_code: generateCategoryCode(),
-        category_name: '',
-        description: '',
-        short_description: '',
-        image: '',
-        icon: '',
-        metaTitle: '',
-        metaDesc: '',
-        keywords: ''
-      });
-      setImageFile(null);
-      setIconFile(null);
+      setSelectedCategory(null);
       fetchCategories();
     } catch (err) {
-      setAlert({ type: 'error', message: err.response?.data?.message || 'Failed to add category.' });
+      setAlert({ type: 'error', message: err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'add'} category.` });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle edit click
+  const handleEdit = (cat) => {
+    setSelectedCategory(cat);
+    setOpen(true);
   };
 
   return (
@@ -130,7 +170,7 @@ export default function CategoriesPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Category</DialogTitle>
+                <DialogTitle>{isEditing ? 'Edit Category' : 'Add New Category'}</DialogTitle>
               </DialogHeader>
 
               {alert && (
@@ -171,10 +211,10 @@ export default function CategoriesPage() {
                 <div>
                   <label className="block mb-1 font-medium">Category Image</label>
                   <Input type="file" accept="image/*" onChange={handleImageChange} />
-                  {imageFile && (
+                  {(imageFile || form.image) && (
                     <img
-                      src={URL.createObjectURL(imageFile)}
-                      alt="Selected Image"
+                      src={imageFile ? URL.createObjectURL(imageFile) : form.image}
+                      alt="Category Image"
                       className="mt-2 h-16 w-16 object-cover rounded"
                     />
                   )}
@@ -184,10 +224,10 @@ export default function CategoriesPage() {
                 <div>
                   <label className="block mb-1 font-medium">Category Icon</label>
                   <Input type="file" accept="image/*" onChange={handleIconChange} />
-                  {iconFile && (
+                  {(iconFile || form.icon) && (
                     <img
-                      src={URL.createObjectURL(iconFile)}
-                      alt="Selected Icon"
+                      src={iconFile ? URL.createObjectURL(iconFile) : form.icon}
+                      alt="Category Icon"
                       className="mt-2 h-16 w-16 object-cover rounded"
                     />
                   )}
@@ -214,8 +254,8 @@ export default function CategoriesPage() {
               </div>
 
               <DialogFooter className="mt-4">
-                <Button onClick={handleAddCategory} disabled={loading}>
-                  {loading ? 'Adding...' : 'Add Category'}
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? `${isEditing ? 'Updating' : 'Adding'}...` : `${isEditing ? 'Update' : 'Add'} Category`}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -240,6 +280,7 @@ export default function CategoriesPage() {
                 <TableHead>Image</TableHead>
                 <TableHead>Icon</TableHead>
                 <TableHead>Created At</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -256,11 +297,16 @@ export default function CategoriesPage() {
                       {cat.icon && <img src={cat.icon} alt={`${cat.category_name}-icon`} className="h-8 w-8 object-cover rounded" />}
                     </TableCell>
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" onClick={() => handleEdit(cat)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
+                  <TableCell colSpan={7} className="text-center text-gray-500">
                     No categories found.
                   </TableCell>
                 </TableRow>

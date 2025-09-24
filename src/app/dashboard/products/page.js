@@ -23,9 +23,32 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Search, Plus, Edit3, Trash2, Filter, SortAsc, Package, Star, Eye, BarChart3 } from 'lucide-react';
+import { 
+  Search, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  Filter, 
+  SortAsc, 
+  Package, 
+  Star, 
+  Eye, 
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  ShoppingCart,
+  Heart,
+  MessageSquare,
+  Activity,
+  Calendar,
+  Award,
+  Target,
+  Clock,
+  X
+} from 'lucide-react';
 import Cookies from 'js-cookie';
 import JsBarcode from 'jsbarcode';
+
 const EMPTY_PRODUCT = {
   product_sku: '',
   product_code: '',
@@ -39,6 +62,297 @@ const EMPTY_PRODUCT = {
   features: [],
 };
 
+const ProductAnalyticsDialog = ({ isOpen, onOpenChange, analytics, loading, error }) => {
+  if (!analytics && !loading && !error) return null;
+
+  const formatCurrency = (amount) => `$${amount?.toFixed(2) || '0.00'}`;
+  const formatNumber = (num) => num?.toLocaleString() || '0';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto bg-white border border-gray-200 text-black">
+        <DialogHeader className="border-b border-gray-100 pb-4">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">Analytics Dashboard</DialogTitle>
+                <DialogDescription className="text-gray-500 text-sm">
+                  Performance insights and metrics
+                </DialogDescription>
+              </div>
+            </div>
+          
+          </div>
+        </DialogHeader>
+
+        <div className="py-4 space-y-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
+              <span className="ml-3 text-gray-600">Loading analytics...</span>
+            </div>
+          ) : error ? (
+            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : analytics ? (
+            <div className="space-y-6">
+              {/* Product Header - Compact */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{analytics.product_name}</h3>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+                      <span><strong>Code:</strong> {analytics.product_code}</span>
+                      <span><strong>Category:</strong> {analytics.category_code}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {analytics.isFeatured && <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">⭐ Featured</span>}
+                    {analytics.isNewArrival && <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">🆕 New</span>}
+                    {analytics.isBestSeller && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">🏆 Best Seller</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Metrics Grid - Responsive */}
+              <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-3 gap-3">
+                <MetricCard
+                  icon={DollarSign}
+                  title="Revenue"
+                  value={formatCurrency(analytics.totalRevenue)}
+                  subtitle={`${formatNumber(analytics.totalOrders)} orders`}
+                  color="green"
+                />
+                <MetricCard
+                  icon={ShoppingCart}
+                  title="Orders"
+                  value={formatNumber(analytics.totalOrders)}
+                  subtitle={`${formatNumber(analytics.totalQuantity)} units`}
+                  color="blue"
+                />
+                <MetricCard
+                  icon={Package}
+                  title="Stock"
+                  value={formatNumber(analytics.stock)}
+                  subtitle={analytics.trackInventory ? 'Tracked' : 'Not tracked'}
+                  color="purple"
+                />
+                <MetricCard
+                  icon={Star}
+                  title="Rating"
+                  value={analytics.averageRating > 0 ? `${analytics.averageRating.toFixed(1)}⭐` : 'N/A'}
+                  subtitle={`${formatNumber(analytics.totalReviews)} reviews`}
+                  color="yellow"
+                />
+                <MetricCard
+                  icon={Eye}
+                  title="Views"
+                  value={formatNumber(analytics.views)}
+                  subtitle={`${formatNumber(analytics.clicks)} clicks`}
+                  color="indigo"
+                />
+                <MetricCard
+                  icon={Heart}
+                  title="Favorites"
+                  value={formatNumber(analytics.favoritesCount)}
+                  subtitle={analytics.views > 0 ? `${((analytics.clicks / analytics.views) * 100).toFixed(1)}% CTR` : '0% CTR'}
+                  color="pink"
+                />
+              </div>
+
+              {/* Performance Dashboard - Two Row Layout */}
+              <div className="space-y-">
+                {/* First Row - Performance & Status */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Performance Insights */}
+                  <Card className="bg-white border border-gray-100 shadow-sm">
+                    <CardHeader className="pb-3 pt-0 bg-gradient-to-r from-green-50 to-blue-50">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        Performance Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Avg Order Value</span>
+                        <span className="font-semibold text-green-600">
+                          {formatCurrency(analytics.totalOrders > 0 ? analytics.totalRevenue / analytics.totalOrders : 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Units per Order</span>
+                        <span className="font-semibold text-blue-600">
+                          {analytics.totalOrders > 0 ? (analytics.totalQuantity / analytics.totalOrders).toFixed(1) : '0'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Conversion Rate</span>
+                        <span className="font-semibold text-purple-600">
+                          {analytics.clicks > 0 ? `${((analytics.totalOrders / analytics.clicks) * 100).toFixed(2)}%` : '0%'}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Product Status */}
+                  <Card className="bg-white border border-gray-100 shadow-sm">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-yellow-50">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Target className="w-4 h-4 text-orange-600" />
+                        Product Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Stock Status</span>
+                        <span className={`font-semibold text-sm ${
+                          analytics.stock > 10 ? 'text-green-600' : 
+                          analytics.stock > 0 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {analytics.stock > 10 ? '✅ In Stock' : 
+                           analytics.stock > 0 ? '⚠️ Low Stock' : '❌ Out of Stock'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Inventory Tracking</span>
+                        <span className={`font-semibold text-sm ${analytics.trackInventory ? 'text-green-600' : 'text-gray-500'}`}>
+                          {analytics.trackInventory ? '🟢 On' : '🔴 Off'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 text-sm">Launch Date</span>
+                        <span className="font-semibold text-indigo-600 text-sm">
+                          {analytics.launchDate ? 
+                            new Date(analytics.launchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            : 'Not set'
+                          }
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Second Row - Availability Timeline */}
+                <div className="grid grid-cols-1">
+                  <Card className="bg-white border border-gray-100 shadow-sm">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-indigo-50">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-purple-600" />
+                        Availability Timeline
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-green-600" />
+                            <span className="text-gray-700 text-sm font-medium">Available From</span>
+                          </div>
+                          <span className="font-semibold text-green-700 text-sm">
+                            {analytics.availableFrom ? 
+                              new Date(analytics.availableFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : 'Not set'
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-red-600" />
+                            <span className="text-gray-700 text-sm font-medium">Available Until</span>
+                          </div>
+                          <span className="font-semibold text-red-700 text-sm">
+                            {analytics.availableUntil ? 
+                              new Date(analytics.availableUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : 'Not set'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Reusable Metric Card Component
+const MetricCard = ({ icon: Icon, title, value, subtitle, color }) => {
+  const colorClasses = {
+    green: 'from-green-50 to-green-100 border-green-200 text-green-700',
+    blue: 'from-blue-50 to-blue-100 border-blue-200 text-blue-700',
+    purple: 'from-purple-50 to-purple-100 border-purple-200 text-purple-700',
+    yellow: 'from-yellow-50 to-yellow-100 border-yellow-200 text-yellow-700',
+    indigo: 'from-indigo-50 to-indigo-100 border-indigo-200 text-indigo-700',
+    pink: 'from-pink-50 to-pink-100 border-pink-200 text-pink-700',
+  };
+
+  return (
+    <Card className={`bg-gradient-to-br ${colorClasses[color]} border shadow-sm hover:shadow-md transition-shadow`}>
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <Icon className="w-4 h-4" />
+          <span className="text-xs font-medium uppercase tracking-wide opacity-80">{title}</span>
+        </div>
+        <div>
+          <p className="text-lg font-bold mb-1">{value}</p>
+          <p className="text-xs opacity-75">{subtitle}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Demo component with sample data
+const DemoAnalyticsDialog = () => {
+  const [isOpen, setIsOpen] = React.useState(true);
+  
+  const sampleAnalytics = {
+    product_name: "Premium Wireless Headphones",
+    product_code: "PWH-001",
+    category_code: "AUDIO",
+    totalRevenue: 45250.75,
+    totalOrders: 156,
+    totalQuantity: 203,
+    stock: 45,
+    trackInventory: true,
+    averageRating: 4.7,
+    totalReviews: 89,
+    views: 3240,
+    clicks: 567,
+    favoritesCount: 234,
+    isFeatured: true,
+    isNewArrival: false,
+    isBestSeller: true,
+    launchDate: "2024-03-15",
+    availableFrom: "2024-03-15",
+    availableUntil: "2024-12-31"
+  };
+
+  return (
+    <div className="p-4">
+      <Button onClick={() => setIsOpen(true)} className="mb-4">
+        Open Analytics Dashboard
+      </Button>
+      <ProductAnalyticsDialog 
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        analytics={sampleAnalytics}
+        loading={false}
+        error={null}
+      />
+    </div>
+  );
+};
 // ProductDialog component moved outside the main component
 const ProductDialog = ({ 
   isOpen, 
@@ -340,7 +654,11 @@ export default function ProductsPage() {
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [productAnalytics, setProductAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterFeatured, setFilterFeatured] = useState('all');
   const [sortOption, setSortOption] = useState('date_new');
@@ -392,6 +710,28 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchProductAnalytics = async (productCode) => {
+    setAnalyticsLoading(true);
+    setAnalyticsError('');
+    setProductAnalytics(null);
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/analytics/${productCode}`, {method: "PATCH"});
+      if (!res.ok) throw new Error('Failed to fetch product analytics');
+      const data = await res.json();
+      setProductAnalytics(data.data);
+    } catch (err) {
+      setAnalyticsError(err.message || 'Something went wrong while fetching analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const handleViewAnalytics = (product) => {
+    setIsAnalyticsOpen(true);
+    fetchProductAnalytics(product.product_code);
   };
 
   useEffect(() => {
@@ -921,6 +1261,15 @@ const handleGenerateBulkBarcodes = async () => {
   <Button
     variant="ghost"
     size="sm"
+    onClick={() => handleViewAnalytics(product)}
+    className="text-gray-600 hover:text-green-600 hover:bg-gray-100"
+    title="View Analytics"
+  >
+    <TrendingUp className="w-4 h-4" />
+  </Button>
+  <Button
+    variant="ghost"
+    size="sm"
     onClick={() => handleGenerateIndividualBarcode(product)}
     disabled={generatingBarcode}
     className="text-gray-600 hover:text-blue-600 hover:bg-gray-100"
@@ -1013,6 +1362,15 @@ const handleGenerateBulkBarcodes = async () => {
         handleAddProduct={handleAddProduct}
         editingProduct={editingProduct}
         resetForm={resetForm}
+      />
+
+      {/* Product Analytics Dialog */}
+      <ProductAnalyticsDialog 
+        isOpen={isAnalyticsOpen}
+        onOpenChange={setIsAnalyticsOpen}
+        analytics={productAnalytics}
+        loading={analyticsLoading}
+        error={analyticsError}
       />
     </div>
   );

@@ -187,7 +187,7 @@ export default function DashboardHome() {
           />
           <StatCard
             title="Orders"
-            value={(financialData.so_far_financial_summary?.completed?.count || 0).toString()}
+            value={(financialData.total_orders_this_month || 0).toString()}
             description="completed this month"
             icon={ShoppingCart}
             trend="up"
@@ -195,7 +195,7 @@ export default function DashboardHome() {
           />
           <StatCard
             title="Customers"
-            value="1,234"
+            value={(financialData.total_customers || 0).toString()}
             description="active this month"
             icon={Users}
             trend="up"

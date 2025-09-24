@@ -24,7 +24,7 @@ export default function TransactionVerification() {
     setShowResult(false);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ledgers/transactions/by-code/${id}`);
+      const response = await fetch(`https://api.entsuki.com/api/ledgers/transactions/by-code/${id}`);
       const data = await response.json();
 
       if (data.success) {

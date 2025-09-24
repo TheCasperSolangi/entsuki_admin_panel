@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShoppingBag } from "lucide-react";
+import { Coffee, ShoppingBag } from "lucide-react";
+import Link from "next/link";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -90,9 +91,9 @@ export default function AuthPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel */}
-      <div className="flex-1 bg-red-600 text-white flex flex-col justify-center items-center p-12">
-        <h1 className="text-5xl font-bold mb-4">ShopEase</h1>
-        <ShoppingBag className="w-24 h-24 mb-4" />
+      <div className="flex-1 bg-[#b8935f] text-white flex flex-col justify-center items-center p-12">
+        <h1 className="text-5xl font-bold mb-4">Entsuki</h1>
+        <Coffee className="w-24 h-24 mb-4" />
         <h2 className="text-4xl font-semibold mb-2">{isLogin ? "Welcome Back" : "Join Us"}</h2>
         <p className="text-lg max-w-xs text-center">
           {isLogin
@@ -182,21 +183,7 @@ export default function AuthPage() {
 
           {/* Toggle link */}
           <p className="text-sm text-gray-500 mt-4 text-center">
-            {isLogin ? (
-              <>
-                Don&apos;t have an account?{" "}
-                <button className="text-red-600 font-medium" onClick={() => setIsLogin(false)}>
-                  Sign Up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button className="text-red-600 font-medium" onClick={() => setIsLogin(true)}>
-                  Sign In
-                </button>
-              </>
-            )}
+            Forgot password ? <Link href="/forget-password">Click Here</Link>
           </p>
         </div>
       </div>
